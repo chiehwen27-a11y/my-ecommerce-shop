@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>樂購 E-Commerce Shop</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom scrollbar for drawer */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen text-slate-800">
+
+    <!-- Toast Notification Overlay -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Navigation Bar -->
+    <nav class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand Logo -->
+                <div class="flex items-center gap-3 cursor-pointer" onclick="showSection('shop')">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                        <i class="fa-solid fa-bag-shopping"></i>
+                    </div>
+                    <span class="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
+                        ShopZone 樂購
+                    </span>
+                </div>
+
+                <!-- Right Nav Controls -->
+                <div class="flex items-center gap-3">
+                    <!-- Demo Mode Indicator -->
+                    <span id="demo-badge" class="hidden items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200/80 rounded-full">
+                        <i class="fa-solid fa-flask text-amber-500"></i> 模擬體驗模式
+                    </span>
+
+                    <!-- Add Seed Product Data Button (Admin/Dev helper) -->
+                    <button onclick="seedInitialProducts()" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                        <i class="fa-solid fa-database text-indigo-500"></i> 一鍵匯入範例商品
+                    </button>
+
+                    <!-- Add Product Button (Auth Users) -->
+                    <button id="btn-add-product" onclick="openModal('add-product-modal')" class="hidden items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition">
+                        <i class="fa-solid fa-plus"></i> 上架商品
+                    </button>
+
+                    <!-- Cart Icon & Badge -->
+                    <button onclick="toggleCartDrawer(true)" class="relative p-2 text-slate-600 hover:text-indigo-600 transition rounded-full hover:bg-slate-100">
+                        <i class="fa-solid fa-cart-shopping text-xl"></i>
+                        <span id="cart-badge" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm scale-0 transition-transform">0</span>
+                    </button>
+
+                    <div class="h-6 w-px bg-slate-200 mx-1"></div>
+
+                    <!-- User Account / Auth Buttons -->
+                    <div id="auth-controls-guest" class="flex items-center gap-2">
+                        <button onclick="openModal('login-modal')" class="px-3.5 py-1.5 text-sm font-medium text-slate-700 hover:text-indigo-600 transition">
+                            登入
+                        </button>
+                        <button onclick="openModal('register-modal')" class="px-3.5 py-1.5 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition shadow-sm">
+                            註冊
+                        </button>
+                    </div>
+
+                    <div id="auth-controls-user" class="hidden items-center gap-2">
+                        <button onclick="showSection('profile')" class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition">
+                            <i class="fa-regular fa-user-circle text-lg text-indigo-600"></i>
+                            <span id="nav-user-name" class="max-w-[100px] truncate">會員中心</span>
+                        </button>
+                        <button onclick="handleLogout()" class="p-2 text-slate-400 hover:text-rose-600 transition rounded-lg" title="登出">
+                            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Dynamic Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- SECTION 1: Shop Main View -->
+        <section id="section-shop" class="space-y-6">
+            <!-- Hero Banner -->
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 text-white p-8 sm:p-12 shadow-xl">
+                <div class="relative z-10 max-w-2xl space-y-4">
+                    <span class="inline-block px-3 py-1 bg-indigo-500/30 border border-indigo-400/30 rounded-full text-xs font-semibold text-indigo-200 uppercase tracking-wider">
+                        NEW ARRIVALS 2026
+                    </span>
+                    <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight">探索高品質生活選品</h1>
+                    <p class="text-indigo-200 text-sm sm:text-base leading-relaxed">
+                        整合 Firebase 高效驅動的單頁購物體驗，隨時隨地挑選您喜愛的優質商品。
+                    </p>
+                </div>
+                <div class="absolute -right-12 -bottom-12 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            </div>
+
+            <!-- Search & Category Filters -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <!-- Search Input -->
+                <div class="relative w-full sm:w-80">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="search-input" oninput="renderProducts()" placeholder="搜尋商品名稱..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+
+                <!-- Category Filters -->
+                <div class="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0" id="category-filters">
+                    <button onclick="filterCategory('All')" class="category-btn active px-4 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-indigo-600 text-white shadow-sm transition">
+                        全部商品
+                    </button>
+                    <button onclick="filterCategory('3C數碼')" class="category-btn px-4 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                        3C數碼
+                    </button>
+                    <button onclick="filterCategory('生活家居')" class="category-btn px-4 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                        生活家居
+                    </button>
+                    <button onclick="filterCategory('服飾配件')" class="category-btn px-4 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                        服飾配件
+                    </button>
+                </div>
+            </div>
+
+            <!-- Product Grid -->
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <!-- Products will be dynamically populated here -->
+            </div>
+
+            <!-- Empty Product State -->
+            <div id="empty-products" class="hidden text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
+                <i class="fa-solid fa-box-open text-5xl text-slate-300 mb-3"></i>
+                <h3 class="text-lg font-semibold text-slate-700">尚未找到商品</h3>
+                <p class="text-slate-500 text-sm mt-1">您可以點擊右上角的「一鍵匯入範例商品」來初始化資料！</p>
+            </div>
+        </section>
+
+        <!-- SECTION 2: Member Profile View -->
+        <section id="section-profile" class="hidden max-w-2xl mx-auto space-y-6">
+            <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
+                    <div class="w-16 h-16 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl font-bold">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">會員個人資料</h2>
+                        <p id="profile-email-display" class="text-xs text-slate-500 font-mono mt-0.5">user@example.com</p>
+                    </div>
+                </div>
+
+                <form id="profile-form" onsubmit="handleSaveProfile(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">姓名 / 暱稱</label>
+                        <input type="text" id="profile-name" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">聯絡電話</label>
+                        <input type="tel" id="profile-phone" placeholder="0912-345-678" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">預設配送地址</label>
+                        <input type="text" id="profile-address" placeholder="台北市信義區..." class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                    </div>
+
+                    <div class="pt-4 flex gap-3">
+                        <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition text-sm">
+                            儲存修改
+                        </button>
+                        <button type="button" onclick="showSection('shop')" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition text-sm">
+                            返回商城
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- User Order History -->
+            <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-receipt text-indigo-600"></i> 我的歷史訂單
+                </h3>
+                <div id="orders-list" class="space-y-4">
+                    <!-- Orders will be rendered here -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Slide-over Shopping Cart Drawer -->
+    <div id="cart-drawer-backdrop" onclick="toggleCartDrawer(false)" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden transition-opacity opacity-0"></div>
+    <div id="cart-drawer" class="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white z-50 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300 ease-in-out">
+        <!-- Cart Header -->
+        <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-basket-shopping text-indigo-600"></i> 您的購物車
+            </h3>
+            <button onclick="toggleCartDrawer(false)" class="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Cart Items List -->
+        <div id="cart-items" class="flex-grow overflow-y-auto p-5 space-y-4">
+            <!-- Cart Items HTML -->
+        </div>
+
+        <!-- Cart Footer / Checkout -->
+        <div class="p-5 border-t border-slate-100 bg-slate-50 space-y-4">
+            <div class="flex justify-between items-center text-sm">
+                <span class="text-slate-500">小計 (Subtotal)</span>
+                <span id="cart-subtotal" class="font-bold text-lg text-slate-900">$0</span>
+            </div>
+            <button id="btn-checkout" onclick="openCheckoutModal()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md transition flex justify-center items-center gap-2">
+                前往結帳 <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 relative transform transition-all">
+            <button onclick="closeModal('login-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="text-2xl font-bold text-slate-800 mb-1">會員登入</h3>
+            <p class="text-xs text-slate-500 mb-6">歡迎回到 ShopZone，請輸入您的帳號密碼</p>
+
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">電子郵件 Email</label>
+                    <input type="email" id="login-email" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">密碼 Password</label>
+                    <input type="password" id="login-password" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition shadow-sm text-sm">
+                    登入
+                </button>
+            </form>
+            <p class="text-xs text-center text-slate-500 mt-4">
+                還沒有帳號嗎？ <a href="#" onclick="closeModal('login-modal'); openModal('register-modal');" class="text-indigo-600 font-semibold hover:underline">立即註冊</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="register-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 relative transform transition-all">
+            <button onclick="closeModal('register-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="text-2xl font-bold text-slate-800 mb-1">註冊新帳號</h3>
+            <p class="text-xs text-slate-500 mb-6">建立帳號以進行快速購物與訂單追蹤</p>
+
+            <form onsubmit="handleRegister(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">姓名 / 暱稱</label>
+                    <input type="text" id="reg-name" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">電子郵件 Email</label>
+                    <input type="email" id="reg-email" required class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">密碼 Password</label>
+                    <input type="password" id="reg-password" required minlength="6" placeholder="至少 6 位字元" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg transition shadow-sm text-sm">
+                    建立帳號
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Product Detail Modal -->
+    <div id="product-detail-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 sm:p-8 relative overflow-hidden flex flex-col md:flex-row gap-6">
+            <button onclick="closeModal('product-detail-modal')" class="absolute top-4 right-4 z-10 text-slate-400 hover:text-slate-600 bg-white/80 rounded-full p-1">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            
+            <div class="w-full md:w-1/2 h-64 md:h-auto rounded-xl bg-slate-100 overflow-hidden relative">
+                <img id="modal-product-img" src="" alt="" class="w-full h-full object-cover">
+            </div>
+            
+            <div class="w-full md:w-1/2 flex flex-col justify-between space-y-4">
+                <div>
+                    <span id="modal-product-category" class="inline-block px-2.5 py-1 bg-indigo-50 text-indigo-600 text-xs font-semibold rounded-full mb-2">Category</span>
+                    <h3 id="modal-product-title" class="text-xl font-bold text-slate-800">Product Name</h3>
+                    <p id="modal-product-price" class="text-2xl font-extrabold text-indigo-600 my-2">$0</p>
+                    <p id="modal-product-desc" class="text-slate-600 text-sm leading-relaxed max-h-32 overflow-y-auto">Description...</p>
+                </div>
+
+                <div class="space-y-3 pt-4 border-t border-slate-100">
+                    <div class="flex items-center justify-between text-xs text-slate-500">
+                        <span>庫存數量：<strong id="modal-product-stock" class="text-slate-700">0</strong> 件</span>
+                    </div>
+                    <button id="modal-add-cart-btn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-cart-plus"></i> 加入購物車
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product Modal (Admin) -->
+    <div id="add-product-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 sm:p-8 relative">
+            <button onclick="closeModal('add-product-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="text-xl font-bold text-slate-800 mb-4">新增 / 上架商品</h3>
+
+            <form onsubmit="handleAddProduct(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">商品名稱</label>
+                    <input type="text" id="add-prod-name" required class="w-full px-3.5 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">價格 (NT$)</label>
+                        <input type="number" id="add-prod-price" required min="1" class="w-full px-3.5 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">分類</label>
+                        <select id="add-prod-category" class="w-full px-3.5 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                            <option value="3C數碼">3C數碼</option>
+                            <option value="生活家居">生活家居</option>
+                            <option value="服飾配件">服飾配件</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">圖片 URL</label>
+                    <input type="url" id="add-prod-image" placeholder="https://images.unsplash.com/..." required class="w-full px-3.5 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">庫存</label>
+                    <input type="number" id="add-prod-stock" value="50" required min="1" class="w-full px-3.5 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">商品敘述</label>
+                    <textarea id="add-prod-desc" rows="3" required class="w-full px-3.5 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"></textarea>
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition shadow-sm text-sm mt-2">
+                    發布商品
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div id="checkout-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 sm:p-8 relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('checkout-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="text-xl font-bold text-slate-800 mb-1">結帳付款</h3>
+            <p class="text-xs text-slate-500 mb-4">請確認您的配送資訊與付款方式</p>
+
+            <form onsubmit="handleProcessPayment(event)" class="space-y-4">
+                <div class="bg-slate-50 p-4 rounded-xl space-y-2 border border-slate-100">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">配送資訊</span>
+                    <div>
+                        <label class="block text-xs text-slate-600 mb-0.5">收件人姓名</label>
+                        <input type="text" id="checkout-name" required class="w-full px-3 py-1.5 rounded border border-slate-200 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-600 mb-0.5">收件地址</label>
+                        <input type="text" id="checkout-address" required class="w-full px-3 py-1.5 rounded border border-slate-200 text-sm">
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">選擇付款方式</span>
+                    <div class="grid grid-cols-3 gap-2">
+                        <label class="border border-slate-200 p-3 rounded-lg flex flex-col items-center gap-1 cursor-pointer hover:border-indigo-500 transition">
+                            <input type="radio" name="payment" value="credit-card" checked class="accent-indigo-600">
+                            <i class="fa-regular fa-credit-card text-indigo-600 text-lg"></i>
+                            <span class="text-xs font-medium">信用卡</span>
+                        </label>
+                        <label class="border border-slate-200 p-3 rounded-lg flex flex-col items-center gap-1 cursor-pointer hover:border-indigo-500 transition">
+                            <input type="radio" name="payment" value="linepay" class="accent-indigo-600">
+                            <i class="fa-solid fa-mobile-screen-button text-emerald-600 text-lg"></i>
+                            <span class="text-xs font-medium">LINE Pay</span>
+                        </label>
+                        <label class="border border-slate-200 p-3 rounded-lg flex flex-col items-center gap-1 cursor-pointer hover:border-indigo-500 transition">
+                            <input type="radio" name="payment" value="applepay" class="accent-indigo-600">
+                            <i class="fa-brands fa-apple text-slate-800 text-lg"></i>
+                            <span class="text-xs font-medium">Apple Pay</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100 flex justify-between items-center">
+                    <span class="text-sm font-semibold text-slate-700">應付總額</span>
+                    <span id="checkout-total" class="text-2xl font-extrabold text-indigo-600">$0</span>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-md transition text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-lock"></i> 確認付款並成立訂單
+                </button>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- FIREBASE & JS LOGIC -->
+    <script type="module">
+        // Import Firebase JS SDK (Modular API v10/v11)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged,
+            updateProfile
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            getDocs, 
+            addDoc, 
+            onSnapshot,
+            query,
+            where,
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // 1. Firebase Configuration (請替換為您的真實 Firebase 設定檔)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBl55LpSiXXXXXwbOaY0oSUSVXxiy4mM",
+            authDomain: "test-XXXXXX-1.firebaseapp.com",
+            projectId: "test-XXXXXX-1",
+            storageBucket: "test-XXXXXX-1.firebasestorage.app",
+            messagingSenderId: "1680XXXXX100",
+            appId: "1:1680XXX22100:web:a3f72435XXXXX8f6258ea1",
+            measurementId: "G-G2XXXXXL29"
+        };
+
+        // Check if config is placeholder or dummy
+        const isPlaceholderConfig = firebaseConfig.apiKey.includes("XXXXX") || firebaseConfig.projectId.includes("XXXXX");
+
+        let app, auth, db;
+        let isDemoMode = false;
+
+        // Try initializing Firebase, fallback to Local Demo Mode if dummy keys
+        try {
+            if (isPlaceholderConfig) {
+                throw new Error("Placeholder Firebase Config Detected");
+            }
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } catch (e) {
+            console.warn("Firebase 未設定或金鑰無效，自動切換至『模擬展示模式 (Demo Mode)』", e);
+            isDemoMode = true;
+        }
+
+        // Global Application State
+        let currentUser = null;
+        let products = [];
+        let cart = [];
+        let currentCategory = 'All';
+        let demoOrders = [];
+
+        // Initial Sample Products
+        const seedProductsData = [
+            {
+                id: "prod-1",
+                name: "降噪真無線藍牙耳機 Pro",
+                price: 3880,
+                category: "3C數碼",
+                image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80",
+                stock: 25,
+                description: "配備主動降噪技術與高解析度音質，提供長達 30 小時續航力。"
+            },
+            {
+                id: "prod-2",
+                name: "極簡極窄邊框 4K 螢幕 27吋",
+                price: 8990,
+                category: "3C數碼",
+                image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600&auto=format&fit=crop&q=80",
+                stock: 10,
+                description: "IPS 廣視角面板，支援 HDR10，專為專業設計與娛樂打造。"
+            },
+            {
+                id: "prod-3",
+                name: "手沖咖啡手感溫控壺",
+                price: 2450,
+                category: "生活家居",
+                image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop&q=80",
+                stock: 15,
+                description: "精密細口鵝頸嘴設計，具備定溫與計時功能，輕鬆沖出好咖啡。"
+            },
+            {
+                id: "prod-4",
+                name: "日系透氣磅薄棉質 T-Shirt",
+                price: 680,
+                category: "服飾配件",
+                image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80",
+                stock: 100,
+                description: "100% 重磅純棉，親膚舒適，經典版型百搭實穿。"
+            }
+        ];
+
+        // --- AUTHENTICATION INIT & OBSERVER ---
+        if (!isDemoMode && auth) {
+            onAuthStateChanged(auth, async (user) => {
+                currentUser = user;
+                updateAuthUI();
+                if (user) {
+                    loadUserProfile(user.uid);
+                    loadUserOrders(user.uid);
+                }
+            });
+            
+            // Listen to live products from Firestore
+            try {
+                onSnapshot(collection(db, 'products'), (snapshot) => {
+                    products = [];
+                    snapshot.forEach(doc => {
+                        products.push({ id: doc.id, ...doc.data() });
+                    });
+                    if (products.length === 0) products = [...seedProductsData];
+                    renderProducts();
+                }, (err) => {
+                    console.warn("Firestore access restricted, using local state.", err);
+                    enableDemoMode();
+                });
+            } catch (err) {
+                enableDemoMode();
+            }
+        } else {
+            enableDemoMode();
+        }
+
+        function enableDemoMode() {
+            isDemoMode = true;
+            document.getElementById('demo-badge')?.classList.remove('hidden');
+            document.getElementById('demo-badge')?.classList.add('flex');
+            products = [...seedProductsData];
+            setTimeout(() => {
+                renderProducts();
+                updateAuthUI();
+            }, 100);
+        }
+
+        function updateAuthUI() {
+            const guestControls = document.getElementById('auth-controls-guest');
+            const userControls = document.getElementById('auth-controls-user');
+            const addProductBtn = document.getElementById('btn-add-product');
+
+            if (currentUser) {
+                guestControls.classList.add('hidden');
+                userControls.classList.remove('hidden');
+                userControls.classList.add('flex');
+                addProductBtn.classList.remove('hidden');
+                addProductBtn.classList.add('flex');
+            } else {
+                guestControls.classList.remove('hidden');
+                userControls.classList.add('hidden');
+                addProductBtn.classList.add('hidden');
+                showSection('shop');
+            }
+        }
+
+        // --- AUTH FUNCTIONS ---
+        window.handleLogin = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            if (isDemoMode) {
+                currentUser = {
+                    uid: "demo-user-123",
+                    displayName: email.split('@')[0] || "示範會員",
+                    email: email
+                };
+                updateAuthUI();
+                document.getElementById('nav-user-name').innerText = currentUser.displayName;
+                document.getElementById('profile-name').value = currentUser.displayName;
+                document.getElementById('profile-email-display').innerText = currentUser.email;
+                document.getElementById('checkout-name').value = currentUser.displayName;
+                showToast('登入成功！(示範模式)', 'success');
+                closeModal('login-modal');
+                return;
+            }
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showToast('登入成功！', 'success');
+                closeModal('login-modal');
+            } catch (err) {
+                showToast(`登入失敗: ${err.message}`, 'error');
+            }
+        };
+
+        window.handleRegister = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+
+            if (isDemoMode) {
+                currentUser = { uid: "demo-" + Date.now(), displayName: name, email: email };
+                updateAuthUI();
+                document.getElementById('nav-user-name').innerText = name;
+                document.getElementById('profile-name').value = name;
+                document.getElementById('profile-email-display').innerText = email;
+                document.getElementById('checkout-name').value = name;
+                showToast('註冊成功並已登入！(示範模式)', 'success');
+                closeModal('register-modal');
+                return;
+            }
+
+            try {
+                const cred = await createUserWithEmailAndPassword(auth, email, password);
+                await updateProfile(cred.user, { displayName: name });
+
+                await setDoc(doc(db, 'users', cred.user.uid), {
+                    displayName: name,
+                    email: email,
+                    phone: '',
+                    address: '',
+                    createdAt: serverTimestamp()
+                });
+
+                showToast('註冊成功並已登入！', 'success');
+                closeModal('register-modal');
+            } catch (err) {
+                showToast(`註冊失敗: ${err.message}`, 'error');
+            }
+        };
+
+        window.handleLogout = async () => {
+            if (isDemoMode) {
+                currentUser = null;
+                updateAuthUI();
+                showToast('您已成功登出', 'info');
+                return;
+            }
+
+            try {
+                await signOut(auth);
+                showToast('您已成功登出', 'info');
+            } catch (err) {
+                showToast(`登出錯誤: ${err.message}`, 'error');
+            }
+        };
+
+        // --- USER PROFILE FUNCTIONS ---
+        async function loadUserProfile(uid) {
+            if (isDemoMode) return;
+            try {
+                const userDoc = await getDoc(doc(db, 'users', uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    document.getElementById('nav-user-name').innerText = data.displayName || '會員';
+                    document.getElementById('profile-name').value = data.displayName || '';
+                    document.getElementById('profile-email-display').innerText = data.email || '';
+                    document.getElementById('profile-phone').value = data.phone || '';
+                    document.getElementById('profile-address').value = data.address || '';
+
+                    document.getElementById('checkout-name').value = data.displayName || '';
+                    document.getElementById('checkout-address').value = data.address || '';
+                }
+            } catch (err) {
+                console.error("載入個人資料失敗:", err);
+            }
+        }
+
+        window.handleSaveProfile = async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const name = document.getElementById('profile-name').value;
+            const phone = document.getElementById('profile-phone').value;
+            const address = document.getElementById('profile-address').value;
+
+            if (isDemoMode) {
+                currentUser.displayName = name;
+                document.getElementById('nav-user-name').innerText = name;
+                document.getElementById('checkout-name').value = name;
+                document.getElementById('checkout-address').value = address;
+                showToast('個人資料已更新！', 'success');
+                return;
+            }
+
+            try {
+                await setDoc(doc(db, 'users', currentUser.uid), {
+                    displayName: name,
+                    phone: phone,
+                    address: address
+                }, { merge: true });
+
+                document.getElementById('nav-user-name').innerText = name;
+                showToast('個人資料已儲存！', 'success');
+            } catch (err) {
+                showToast(`儲存失敗: ${err.message}`, 'error');
+            }
+        };
+
+        // --- PRODUCT MANAGEMENT ---
+        window.handleAddProduct = async (e) => {
+            e.preventDefault();
+            if (!currentUser) {
+                showToast('請先登入會員', 'error');
+                return;
+            }
+
+            const name = document.getElementById('add-prod-name').value;
+            const price = Number(document.getElementById('add-prod-price').value);
+            const category = document.getElementById('add-prod-category').value;
+            const image = document.getElementById('add-prod-image').value;
+            const stock = Number(document.getElementById('add-prod-stock').value);
+            const description = document.getElementById('add-prod-desc').value;
+
+            const newProd = {
+                id: "prod-" + Date.now(),
+                name,
+                price,
+                category,
+                image,
+                stock,
+                description,
+                createdAt: new Date()
+            };
+
+            if (isDemoMode) {
+                products.unshift(newProd);
+                renderProducts();
+                showToast('商品上架成功！(示範模式)', 'success');
+                closeModal('add-product-modal');
+                e.target.reset();
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, 'products'), {
+                    name,
+                    price,
+                    category,
+                    image,
+                    stock,
+                    description,
+                    createdAt: serverTimestamp()
+                });
+
+                showToast('商品上架成功！', 'success');
+                closeModal('add-product-modal');
+                e.target.reset();
+            } catch (err) {
+                showToast(`上架失敗: ${err.message}`, 'error');
+            }
+        };
+
+        // Seed Sample Products
+        window.seedInitialProducts = async () => {
+            if (isDemoMode) {
+                products = [...seedProductsData];
+                renderProducts();
+                showToast('成功恢復預設範例商品！', 'success');
+                return;
+            }
+
+            try {
+                for (const prod of seedProductsData) {
+                    const { id, ...prodData } = prod;
+                    await addDoc(collection(db, 'products'), {
+                        ...prodData,
+                        createdAt: serverTimestamp()
+                    });
+                }
+                showToast('成功匯入範例商品！', 'success');
+            } catch (err) {
+                showToast(`匯入失敗: ${err.message}`, 'error');
+            }
+        };
+
+        // --- PRODUCT UI RENDER ---
+        window.renderProducts = () => {
+            const grid = document.getElementById('product-grid');
+            const emptyState = document.getElementById('empty-products');
+            const searchKeyword = document.getElementById('search-input')?.value.toLowerCase() || '';
+
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const filtered = products.filter(p => {
+                const matchesCat = currentCategory === 'All' || p.category === currentCategory;
+                const matchesSearch = p.name.toLowerCase().includes(searchKeyword);
+                return matchesCat && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                emptyState?.classList.remove('hidden');
+            } else {
+                emptyState?.classList.add('hidden');
+                filtered.forEach(product => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition group';
+                    card.innerHTML = `
+                        <div>
+                            <div class="relative h-48 bg-slate-100 overflow-hidden cursor-pointer" onclick="openProductDetail('${product.id}')">
+                                <img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='https://placehold.co/600x400/e2e8f0/64748b?text=Image+Unavailable'">
+                                <span class="absolute top-3 left-3 px-2.5 py-1 bg-white/90 backdrop-blur-md rounded-full text-[10px] font-bold text-slate-700 shadow-sm">
+                                    ${product.category}
+                                </span>
+                            </div>
+                            <div class="p-4 space-y-1">
+                                <h4 class="font-bold text-slate-800 text-sm line-clamp-1 hover:text-indigo-600 cursor-pointer" onclick="openProductDetail('${product.id}')">${product.name}</h4>
+                                <p class="text-xs text-slate-500 line-clamp-2">${product.description}</p>
+                            </div>
+                        </div>
+                        <div class="p-4 pt-0 flex items-center justify-between mt-2">
+                            <span class="text-lg font-extrabold text-indigo-600">$${product.price.toLocaleString()}</span>
+                            <button onclick="addToCart('${product.id}')" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-600 hover:text-white rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                                <i class="fa-solid fa-cart-plus"></i> 加購物車
+                            </button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+        };
+
+        window.filterCategory = (cat) => {
+            currentCategory = cat;
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+                btn.classList.add('bg-slate-100', 'text-slate-600');
+            });
+            event.target.classList.remove('bg-slate-100', 'text-slate-600');
+            event.target.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+            renderProducts();
+        };
+
+        window.openProductDetail = (prodId) => {
+            const product = products.find(p => p.id === prodId);
+            if (!product) return;
+
+            document.getElementById('modal-product-img').src = product.image;
+            document.getElementById('modal-product-category').innerText = product.category;
+            document.getElementById('modal-product-title').innerText = product.name;
+            document.getElementById('modal-product-price').innerText = `$${product.price.toLocaleString()}`;
+            document.getElementById('modal-product-desc').innerText = product.description;
+            document.getElementById('modal-product-stock').innerText = product.stock;
+
+            const addBtn = document.getElementById('modal-add-cart-btn');
+            addBtn.onclick = () => {
+                addToCart(product.id);
+                closeModal('product-detail-modal');
+            };
+
+            openModal('product-detail-modal');
+        };
+
+        // --- CART SYSTEM ---
+        window.addToCart = (prodId) => {
+            const product = products.find(p => p.id === prodId);
+            if (!product) return;
+
+            const existing = cart.find(item => item.id === prodId);
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    image: product.image,
+                    qty: 1
+                });
+            }
+
+            updateCartUI();
+            showToast(`已新增 "${product.name}" 至購物車！`, 'success');
+        };
+
+        window.updateCartQty = (prodId, delta) => {
+            const item = cart.find(i => i.id === prodId);
+            if (!item) return;
+
+            item.qty += delta;
+            if (item.qty <= 0) {
+                cart = cart.filter(i => i.id !== prodId);
+            }
+            updateCartUI();
+        };
+
+        window.removeFromCart = (prodId) => {
+            cart = cart.filter(i => i.id !== prodId);
+            updateCartUI();
+        };
+
+        function updateCartUI() {
+            const badge = document.getElementById('cart-badge');
+            const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+
+            badge.innerText = totalQty;
+            if (totalQty > 0) {
+                badge.classList.remove('scale-0');
+            } else {
+                badge.classList.add('scale-0');
+            }
+
+            const cartContainer = document.getElementById('cart-items');
+            cartContainer.innerHTML = '';
+
+            let subtotal = 0;
+
+            if (cart.length === 0) {
+                cartContainer.innerHTML = `
+                    <div class="text-center py-12 text-slate-400">
+                        <i class="fa-solid fa-basket-shopping text-4xl mb-2"></i>
+                        <p class="text-sm">購物車目前是空的</p>
+                    </div>
+                `;
+            } else {
+                cart.forEach(item => {
+                    const itemTotal = item.price * item.qty;
+                    subtotal += itemTotal;
+
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100';
+                    div.innerHTML = `
+                        <img src="${item.image}" alt="" class="w-16 h-16 object-cover rounded-lg" onerror="this.src='https://placehold.co/100?text=Item'">
+                        <div class="flex-grow">
+                            <h5 class="text-xs font-bold text-slate-800 line-clamp-1">${item.name}</h5>
+                            <span class="text-xs font-semibold text-indigo-600">$${item.price.toLocaleString()}</span>
+                            <div class="flex items-center gap-2 mt-1">
+                                <button onclick="updateCartQty('${item.id}', -1)" class="w-5 h-5 rounded bg-white border border-slate-200 text-xs flex items-center justify-center text-slate-600">-</button>
+                                <span class="text-xs font-bold text-slate-700">${item.qty}</span>
+                                <button onclick="updateCartQty('${item.id}', 1)" class="w-5 h-5 rounded bg-white border border-slate-200 text-xs flex items-center justify-center text-slate-600">+</button>
+                            </div>
+                        </div>
+                        <button onclick="removeFromCart('${item.id}')" class="text-slate-300 hover:text-rose-500 p-1">
+                            <i class="fa-solid fa-trash-can text-sm"></i>
+                        </button>
+                    `;
+                    cartContainer.appendChild(div);
+                });
+            }
+
+            document.getElementById('cart-subtotal').innerText = `$${subtotal.toLocaleString()}`;
+            document.getElementById('checkout-total').innerText = `$${subtotal.toLocaleString()}`;
+        }
+
+        window.toggleCartDrawer = (show) => {
+            const drawer = document.getElementById('cart-drawer');
+            const backdrop = document.getElementById('cart-drawer-backdrop');
+
+            if (show) {
+                backdrop.classList.remove('hidden');
+                setTimeout(() => backdrop.classList.remove('opacity-0'), 10);
+                drawer.classList.remove('translate-x-full');
+            } else {
+                drawer.classList.add('translate-x-full');
+                backdrop.classList.add('opacity-0');
+                setTimeout(() => backdrop.classList.add('hidden'), 300);
+            }
+        };
+
+        // --- CHECKOUT & ORDERS ---
+        window.openCheckoutModal = () => {
+            if (cart.length === 0) {
+                showToast('購物車內無任何商品！', 'error');
+                return;
+            }
+            if (!currentUser) {
+                showToast('請先登入會員以繼續結帳！', 'info');
+                openModal('login-modal');
+                return;
+            }
+            toggleCartDrawer(false);
+            openModal('checkout-modal');
+        };
+
+        window.handleProcessPayment = async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const name = document.getElementById('checkout-name').value;
+            const address = document.getElementById('checkout-address').value;
+            const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+
+            const orderData = {
+                id: "ord-" + Date.now().toString().slice(-6),
+                userId: currentUser.uid,
+                receiverName: name,
+                shippingAddress: address,
+                items: [...cart],
+                totalAmount: subtotal,
+                status: '已付款',
+                createdAt: new Date()
+            };
+
+            if (isDemoMode) {
+                demoOrders.unshift(orderData);
+                renderDemoOrders();
+                showToast('付款成功！訂單已正式成立。(示範模式)', 'success');
+                cart = [];
+                updateCartUI();
+                closeModal('checkout-modal');
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, 'orders'), {
+                    userId: currentUser.uid,
+                    receiverName: name,
+                    shippingAddress: address,
+                    items: cart,
+                    totalAmount: subtotal,
+                    status: '已付款',
+                    createdAt: serverTimestamp()
+                });
+
+                showToast('付款成功！訂單已正式成立。', 'success');
+                cart = [];
+                updateCartUI();
+                closeModal('checkout-modal');
+                loadUserOrders(currentUser.uid);
+            } catch (err) {
+                showToast(`結帳失敗: ${err.message}`, 'error');
+            }
+        };
+
+        function renderDemoOrders() {
+            const container = document.getElementById('orders-list');
+            if (!container) return;
+            container.innerHTML = '';
+            if (demoOrders.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 italic">尚無歷史訂單紀錄。</p>`;
+                return;
+            }
+
+            demoOrders.forEach(order => {
+                const date = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '剛剛';
+                const itemSummary = order.items.map(i => `${i.name} x${i.qty}`).join(', ');
+
+                const div = document.createElement('div');
+                div.className = 'p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1';
+                div.innerHTML = `
+                    <div class="flex justify-between font-semibold text-slate-700">
+                        <span>訂單編號: #${order.id}</span>
+                        <span class="text-emerald-600">${order.status}</span>
+                    </div>
+                    <p class="text-slate-500 line-clamp-1">商品: ${itemSummary}</p>
+                    <div class="flex justify-between items-center text-slate-400 pt-2 border-t border-slate-200/60">
+                        <span>日期: ${date}</span>
+                        <span class="font-extrabold text-indigo-600 text-sm">$${order.totalAmount.toLocaleString()}</span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function loadUserOrders(uid) {
+            if (isDemoMode) {
+                renderDemoOrders();
+                return;
+            }
+            const container = document.getElementById('orders-list');
+            try {
+                const q = query(collection(db, 'orders'), where('userId', '==', uid));
+                const snapshot = await getDocs(q);
+
+                container.innerHTML = '';
+                if (snapshot.empty) {
+                    container.innerHTML = `<p class="text-xs text-slate-400 italic">尚無歷史訂單紀錄。</p>`;
+                    return;
+                }
+
+                snapshot.forEach(docSnap => {
+                    const order = docSnap.data();
+                    const date = order.createdAt ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : '剛剛';
+                    const itemSummary = order.items.map(i => `${i.name} x${i.qty}`).join(', ');
+
+                    const div = document.createElement('div');
+                    div.className = 'p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1';
+                    div.innerHTML = `
+                        <div class="flex justify-between font-semibold text-slate-700">
+                            <span>訂單編號: #${docSnap.id.substring(0, 8)}</span>
+                            <span class="text-emerald-600">${order.status}</span>
+                        </div>
+                        <p class="text-slate-500 line-clamp-1">商品: ${itemSummary}</p>
+                        <div class="flex justify-between items-center text-slate-400 pt-2 border-t border-slate-200/60">
+                            <span>日期: ${date}</span>
+                            <span class="font-extrabold text-indigo-600 text-sm">$${order.totalAmount.toLocaleString()}</span>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (err) {
+                console.error("載入訂單失敗:", err);
+            }
+        }
+
+        // --- UI NAVIGATION & MODAL HELPERS ---
+        window.showSection = (sectionName) => {
+            document.getElementById('section-shop')?.classList.add('hidden');
+            document.getElementById('section-profile')?.classList.add('hidden');
+
+            document.getElementById(`section-${sectionName}`)?.classList.remove('hidden');
+            if (sectionName === 'profile' && isDemoMode) {
+                renderDemoOrders();
+            }
+        };
+
+        window.openModal = (id) => {
+            document.getElementById(id)?.classList.remove('hidden');
+        };
+
+        window.closeModal = (id) => {
+            document.getElementById(id)?.classList.add('hidden');
+        };
+
+        // Custom Toast Notification System
+        window.showToast = (message, type = 'info') => {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+
+            const bgColors = {
+                success: 'bg-emerald-600',
+                error: 'bg-rose-600',
+                info: 'bg-slate-800'
+            };
+
+            toast.className = `pointer-events-auto px-4 py-2.5 rounded-xl text-white text-xs font-semibold shadow-xl flex items-center gap-2 transform transition duration-300 translate-y-2 opacity-0 ${bgColors[type] || bgColors.info}`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${message}`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        };
+
+        // Initialize display
+        renderProducts();
+    </script>
+</body>
+</html>
